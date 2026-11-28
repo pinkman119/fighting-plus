@@ -46,7 +46,7 @@ export class ObsController {
    */
   @Post('multiview')
   async addMultiview(@Body() body: MultiviewBody, @Req() req: Request) {
-    const host = (req.headers['host'] as string) || 'localhost:3200';
+    const host = (req.headers['host'] as string) || 'localhost:3118';
     const url = body.url || `http://${host}/composite`;
     const width = Number(body.width) || 1920;
     const height = Number(body.height) || 1080;

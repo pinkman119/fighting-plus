@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { SrsService } from '../srs/srs.service';
 
-/** 预定义的三路流（同时也是 OBS 推流码） */
+/** 预定义的三路流（同时也是 OBS 推流码），供合流页 /composite 使用 */
 export const STREAM_KEYS = ['A', 'B', 'C'] as const;
 
 export interface StreamStatus {
@@ -13,18 +14,14 @@ export interface StreamStatus {
   rtmpPush: { server: string; key: string };
 }
 
-interface SrsApiStream {
-  id?: number;
-  name?: string;
-  app?: string;
-  [k: string]: unknown;
-}
-
+/**
+ * 合流用的固定三路流状态。在线流快照统一由 SrsService 维护。
+ */
 @Injectable()
 export class StreamsService {
-  private readonly logger = new Logger(StreamsService.name);
-  private readonly srsApiUrl = process.env.SRS_API_URL || 'http://127.0.0.1:1985';
   private readonly rtmpServer = process.env.RTMP_PUSH_SERVER || 'rtmp://localhost:1935/live';
+
+  constructor(@Inject(SrsService) private readonly srs: SrsService) {}
 
   /** 实际的推流地址要带局域网 IP，由 Controller 用请求 Host 推导，这里做兜底 */
   buildRtmpServer(host?: string): string {
@@ -32,40 +29,20 @@ export class StreamsService {
     return this.rtmpServer;
   }
 
-  /** 查询 SRS HTTP API，返回在线的流名字集合 */
-  async getOnlineStreamNames(): Promise<{ srsOnline: boolean; names: Set<string> }> {
-    try {
-      const res = await fetch(`${this.srsApiUrl}/api/v1/streams`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      if (!res.ok) throw new Error(`SRS API ${res.status}`);
-      const body = (await res.json()) as {
-        code?: number;
-        streams?: SrsApiStream[];
-      };
-      const names = new Set<string>();
-      for (const s of body.streams || []) {
-        // 兼容 SRS 不同版本：name 可能是 "A" 或 "live/A"
-        const name = String(s.name ?? '');
-        const app = String(s.app ?? '');
-        if (name) names.add(name.includes('/') ? name : app ? `${app}/${name}` : name);
-      }
-      return { srsOnline: true, names };
-    } catch (err) {
-      this.logger.warn(`查询 SRS 状态失败: ${String(err)}`);
-      return { srsOnline: false, names: new Set<string>() };
-    }
+  /** 返回当前的在线流名集合（`live/<key>` 形式） */
+  getOnlineStreamNames(): { srsOnline: boolean; names: Set<string> } {
+    return this.srs.getOnlineStreamNames();
   }
 
   isOnline(names: Set<string>, key: string): boolean {
-    return names.has(key) || names.has(`live/${key}`);
+    return this.srs.isOnline(names, key);
   }
 
   async getStatus(rtmpServer: string): Promise<StreamStatus[]> {
-    const { names } = await this.getOnlineStreamNames();
+    const snap = await this.srs.fresh();
     return STREAM_KEYS.map((key) => ({
       key,
-      online: this.isOnline(names, key),
+      online: this.srs.isOnline(new Set(snap.streams.keys()), key),
       flvUrl: `/live/${key}.flv`,
       hlsUrl: `/live/${key}.m3u8`,
       rtmpPush: { server: rtmpServer, key },

@@ -1,0 +1,7 @@
+{
+  "name": "@fighting-plus/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "fighting-plus 共享协议类型（服务端 / Web 端 / 桌面客户端共用）",
+  "types": "./protocol.ts"
+}

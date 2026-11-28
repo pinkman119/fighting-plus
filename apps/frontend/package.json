@@ -1,0 +1,24 @@
+{
+  "name": "fighting-plus-web",
+  "version": "1.0.4",
+  "private": true,
+  "description": "fighting-plus Web 端（PC / 平板 / 手机响应式）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "mpegts.js": "^1.7.3",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.7.2",
+    "vite": "^6.4.0",
+    "vue-tsc": "^2.2.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "fighting-plus",
+			"path": "."
+		},
+		{
+			"name": "server",
+			"path": "prototype/obs-multiview/server"
+		}
+	],
+	"settings": {}
+}

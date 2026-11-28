@@ -13,6 +13,9 @@ build/
 .env.*
 !.env.example
 
+# 内置流媒体服务的本地数据
+data/
+
 # Logs
 logs/
 *.log

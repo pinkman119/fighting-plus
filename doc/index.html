@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>fighting-plus · 战术协作系统</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0f0d;--bg2:#080907;--surface:#191a17;--surface2:#22231f;--surface3:#2b2c27;
+  --line:rgba(243,240,230,.10);--line2:rgba(243,240,230,.20);
+  --text:#f3f0e6;--dim:#a5a297;--mute:#6f6d64;
+  --amber:#ffb020;--amber-soft:rgba(255,176,32,.13);--amber-line:rgba(255,176,32,.30);
+  --live:#ff5a3c;--mint:#6fdc9a;--blue:#7aa2ff;
+  --hud:rgba(255,176,32,.10);--bezel:#050605;
+  --r:10px;--r2:14px;
+  --display:'Barlow Condensed','PingFang SC','Microsoft YaHei',sans-serif;
+  --body:'Space Grotesk','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+[data-theme="light"]{
+  --bg:#e9e7df;--bg2:#dedbd1;--surface:#f6f4ed;--surface2:#ebe8df;--surface3:#dedbd0;
+  --line:rgba(30,28,22,.13);--line2:rgba(30,28,22,.23);
+  --text:#1d1c18;--dim:#57554d;--mute:#87847b;
+  --amber:#a96900;--amber-soft:rgba(169,105,0,.11);--amber-line:rgba(169,105,0,.32);
+  --live:#d23b20;--mint:#1d8a53;--blue:#3b5bc7;
+  --hud:rgba(169,105,0,.09);--bezel:#c9c5b9;
+}
+html,body{min-height:100%}
+body{
+  background:var(--bg2);color:var(--text);font-family:var(--body);
+  -webkit-font-smoothing:antialiased;display:flex;flex-direction:column;
+  min-height:100vh;overflow-x:hidden;
+  transition:background .3s ease,color .3s ease;
+}
+button,input{font:inherit}
+button{cursor:pointer}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ---------- showcase chrome ---------- */
+.stage-head{
+  display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;
+  padding:24px clamp(18px,4vw,56px) 18px;border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{
+  width:40px;height:40px;flex:0 0 40px;border:1px solid var(--amber-line);border-radius:6px;
+  display:grid;place-items:center;position:relative;background:var(--amber-soft);
+}
+.brand-mark::before,.brand-mark::after{content:'';position:absolute;background:var(--amber);border-radius:1px}
+.brand-mark::before{width:20px;height:3px}
+.brand-mark::after{width:3px;height:20px}
+.brand-mark i{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--live);right:-2px;top:-2px}
+.brand-name{font-family:var(--display);font-size:25px;font-weight:700;letter-spacing:.045em;line-height:1}
+.brand-name span{color:var(--amber)}
+.brand-sub{font-size:11px;color:var(--dim);letter-spacing:.22em;margin-top:5px;text-transform:uppercase}
+.stage-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dev-switch{display:flex;gap:3px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.dev-btn{
+  border:0;background:transparent;color:var(--dim);font-size:12px;font-weight:500;
+  padding:8px 13px;border-radius:7px;display:flex;align-items:center;gap:7px;
+  transition:background .2s,color .2s;min-height:36px;
+}
+.dev-btn:hover{color:var(--text);background:var(--surface2)}
+.dev-btn.active{background:var(--amber);color:#191408;font-weight:700}
+.dev-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.6}
+.hint{font-family:var(--mono);font-size:10px;color:var(--mute);letter-spacing:.06em}
+.stage{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:26px clamp(14px,4vw,56px) 44px}
+
+/* ---------- device frame ---------- */
+.device-frame{
+  position:relative;width:min(1400px,100%);height:clamp(560px,calc(100vh - 175px),840px);
+  background:var(--bg);border:1px solid var(--line2);border-radius:var(--r2);
+  overflow:hidden;box-shadow:0 32px 90px rgba(0,0,0,.42);
+  transition:width .5s cubic-bezier(.22,1,.36,1),border-radius .35s ease,border-width .35s ease;
+}
+.device-frame.tablet{width:min(834px,100%);border:9px solid var(--bezel);border-radius:28px}
+.device-frame.mobile{width:min(392px,100%);height:clamp(580px,calc(100vh - 175px),790px);border:10px solid var(--bezel);border-radius:38px}
+/* desktop client: native app window chrome */
+.device-frame.desktop{
+  width:min(1460px,100%);border:1px solid var(--line2);border-radius:12px;
+  display:flex;flex-direction:column;
+  box-shadow:0 40px 110px rgba(0,0,0,.55),0 0 0 1px var(--amber-soft);
+}
+.device-frame.desktop .app{flex:1;height:auto;min-height:0;border-radius:0}
+.win-titlebar{display:none}
+.device-frame.desktop .win-titlebar{
+  flex:0 0 auto;height:38px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  gap:12px;padding:0 14px;background:var(--surface2);border-bottom:1px solid var(--line);
+  user-select:none;
+}
+.win-lights{display:flex;align-items:center;gap:7px}
+.win-lights i{width:11px;height:11px;border-radius:50%;display:block}
+.win-lights i:nth-child(1){background:#ff5f57}
+.win-lights i:nth-child(2){background:#febc2e}
+.win-lights i:nth-child(3){background:#28c840}
+.win-title{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
+.win-title .wicon{
+  width:17px;height:17px;flex:0 0 17px;border-radius:4px;background:var(--amber);
+  color:#191408;display:grid;place-items:center;font:700 14px var(--display);line-height:1;
+}
+.win-title b{font:600 11px var(--display);color:var(--text);letter-spacing:.05em}
+.win-title span{font-size:10px;color:var(--dim)}
+.win-title em{font:400 9px var(--mono);font-style:normal;color:var(--mute);letter-spacing:.04em}
+.win-badge{
+  font:600 8px var(--mono);color:var(--amber);border:1px solid var(--amber-line);
+  background:var(--amber-soft);border-radius:4px;padding:2px 5px;letter-spacing:.06em;
+}
+.win-controls{display:flex;align-items:center;justify-content:flex-end;gap:2px}
+.win-controls i{
+  width:26px;height:24px;display:grid;place-items:center;border-radius:4px;
+  color:var(--mute);transition:.15s;
+}
+.win-controls i:hover{background:var(--surface3);color:var(--text)}
+.win-controls svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
+@media (max-width:720px){
+  .device-frame.desktop .win-title span,
+  .device-frame.desktop .win-title em{display:none}
+}
+.app{container-type:inline-size;container-name:app;height:100%;display:flex;flex-direction:column;background:var(--bg);position:relative}
+
+/* ---------- app header ---------- */
+.app-head{
+  position:relative;flex:0 0 auto;display:flex;align-items:center;gap:16px;padding:13px 18px;
+  border-bottom:1px solid var(--line);background:var(--surface);
+}
+.orient-picker{
+  position:absolute;top:calc(100% + 6px);right:14px;z-index:150;width:216px;
+  padding:7px;background:var(--surface);border:1px solid var(--line2);border-radius:10px;
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+}
+.orient-picker[hidden]{display:none}
+.orient-title{font:500 10px var(--mono);color:var(--mute);letter-spacing:.08em;padding:4px 7px 8px}
+.orient-opt{
+  display:flex;align-items:center;gap:10px;width:100%;padding:9px;border-radius:7px;
+  border:1px solid transparent;background:transparent;color:var(--text);text-align:left;transition:.2s;
+}
+.orient-opt:hover,.orient-opt.active{background:var(--amber-soft);border-color:var(--amber-line)}
+.orient-opt svg{width:26px;height:26px;flex:0 0 26px;stroke:var(--amber);fill:none;stroke-width:1.4}
+.orient-opt b{display:block;font-size:12px;font-weight:600}
+.orient-opt em{display:block;font:400 9px var(--mono);color:var(--dim);font-style:normal;margin-top:2px}
+.session{display:flex;flex-direction:column;min-width:0}
+.session-title{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+.session-meta{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px;white-space:nowrap;letter-spacing:.03em}
+.session-meta b{color:var(--mint);font-weight:500}
+.crew{display:flex;gap:5px;margin-left:auto}
+.crew-chip{
+  display:flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid var(--line);
+  border-radius:7px;background:var(--surface2);font-size:11px;color:var(--dim);white-space:nowrap;
+}
+.crew-chip.self{border-color:var(--amber-line);background:var(--amber-soft);color:var(--text)}
+.crew-chip .who{font-family:var(--mono);font-weight:600;color:var(--text)}
+.crew-dot{width:6px;height:6px;border-radius:50%;background:var(--mute);flex:0 0 6px}
+.crew-chip.live .crew-dot{background:var(--live);box-shadow:0 0 0 3px rgba(255,90,60,.16)}
+.debug-btn{
+  border:1px solid var(--line);background:var(--surface2);color:var(--dim);
+  display:flex;align-items:center;gap:5px;padding:6px 9px;border-radius:7px;
+  font-size:11px;white-space:nowrap;transition:.2s;
+}
+.debug-btn:hover{color:var(--amber);border-color:var(--amber-line)}
+.debug-btn.active{background:var(--amber);border-color:var(--amber);color:#191408;font-weight:700}
+.debug-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round}
+.battle-btn{
+  border:1px solid var(--line);background:var(--surface2);color:var(--dim);
+  display:flex;align-items:center;gap:5px;padding:6px 9px;border-radius:7px;
+  font-size:11px;white-space:nowrap;transition:.2s;
+}
+.battle-btn:hover{color:var(--live);border-color:rgba(255,90,60,.4)}
+.battle-btn.active{background:var(--live);border-color:var(--live);color:#fff;font-weight:700}
+.battle-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round}
+.battle-solo-btn{display:none}
+.feed-tools .battle-quit-btn{display:none}
+.icon-btn{
+  width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid var(--line);
+  border-radius:8px;background:var(--surface2);color:var(--dim);transition:.2s;
+}
+.icon-btn:hover{color:var(--text);border-color:var(--amber-line)}
+.icon-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round}
+.icon-btn.on{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
+
+/* ---------- body grid ---------- */
+.app-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);position:relative}
+.feeds{
+  min-width:0;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;padding:13px;background:var(--bg);align-content:stretch;
+}
+.feed{
+  min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--surface);overflow:hidden;
+}
+.feed-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line)}
+.peer{display:flex;align-items:baseline;gap:8px;min-width:0}
+.peer-id{font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:.03em;line-height:1}
+.peer-name{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.peer-online{display:flex;align-items:center;gap:4px;font:500 9px var(--mono);color:var(--mint);white-space:nowrap}
+.peer-online i{width:5px;height:5px;border-radius:50%;background:var(--mint);flex:0 0 5px}
+.peer-online em{font-style:normal}
+.live-tag{
+  display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+  color:var(--live);border:1px solid rgba(255,90,60,.35);background:rgba(255,90,60,.09);
+  padding:3px 6px;border-radius:4px;white-space:nowrap;
+}
+.live-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--live);animation:blink 1.8s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+.feed-tools{display:flex;gap:4px}
+.feed-tools button{
+  width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:5px;
+  background:transparent;color:var(--mute);transition:.2s;
+}
+.feed-tools button:hover{background:var(--surface3);color:var(--text)}
+.feed-tools svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.7}
+.screen{flex:1;min-height:0;position:relative;overflow:hidden;background:#0b0d0c;cursor:crosshair}
+.screen::before,.screen::after{content:'';position:absolute;width:15px;height:15px;opacity:.75;pointer-events:none;z-index:4}
+.screen::before{left:9px;top:9px;border-left:1px solid var(--amber);border-top:1px solid var(--amber)}
+.screen::after{right:9px;bottom:9px;border-right:1px solid var(--amber);border-bottom:1px solid var(--amber)}
+.feed-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 11px;
+  font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.04em;
+}
+.feed-foot strong{color:var(--mint);font-weight:500}
+.feed-foot .lat{color:var(--amber)}
+
+/* map feed */
+.grid-lines{
+  position:absolute;inset:0;opacity:.75;
+  background-image:linear-gradient(var(--hud) 1px,transparent 1px),linear-gradient(90deg,var(--hud) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+.grid-lines::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 35%,rgba(0,0,0,.55) 100%)}
+.sweep{
+  position:absolute;width:170%;aspect-ratio:1;left:-35%;top:-35%;
+  background:conic-gradient(from 0deg,transparent 0deg,transparent 296deg,rgba(111,220,154,.02) 320deg,rgba(111,220,154,.20) 352deg,transparent 360deg);
+  animation:sweep 8s linear infinite;
+}
+@keyframes sweep{to{transform:rotate(360deg)}}
+.blip{position:absolute;left:var(--x);top:var(--y);width:8px;height:8px;border-radius:50%;transform:translate(-50%,-50%);z-index:2}
+.blip.ally{background:var(--mint);box-shadow:0 0 0 4px rgba(111,220,154,.13)}
+.blip.foe{background:var(--live);box-shadow:0 0 0 4px rgba(255,90,60,.13)}
+.blip::before{
+  content:attr(data-label);position:absolute;left:12px;top:-5px;white-space:nowrap;
+  font:500 9px var(--mono);color:var(--dim);letter-spacing:.04em;
+}
+.route{position:absolute;z-index:1;height:1px;background:rgba(111,220,154,.35);transform-origin:left center}
+.hud-line{position:absolute;z-index:3;font:500 9px var(--mono);color:var(--dim);letter-spacing:.1em}
+.hud-line.tl{left:16px;top:30px}
+.hud-line.br{right:16px;bottom:28px;color:var(--amber)}
+
+/* pov feed */
+.pov-scene{position:absolute;inset:0;background:linear-gradient(180deg,#1c201c 0%,#303227 46%,#141711 47%,#0c0e0b 100%)}
+.pov-scene::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 44%,rgba(255,176,32,.11),transparent 58%)}
+.ridge{
+  position:absolute;left:0;right:0;bottom:47%;height:20%;background:#12150f;
+  clip-path:polygon(0 100%,0 62%,11% 30%,24% 58%,37% 18%,51% 50%,65% 12%,79% 48%,91% 24%,100% 52%,100% 100%);
+}
+.crosshair{position:absolute;left:50%;top:47%;width:42px;height:42px;transform:translate(-50%,-50%);z-index:3}
+.crosshair i{position:absolute;background:rgba(255,176,32,.85)}
+.crosshair i:nth-child(1){left:50%;top:0;width:1px;height:11px;transform:translateX(-50%)}
+.crosshair i:nth-child(2){left:50%;bottom:0;width:1px;height:11px;transform:translateX(-50%)}
+.crosshair i:nth-child(3){top:50%;left:0;height:1px;width:11px;transform:translateY(-50%)}
+.crosshair i:nth-child(4){top:50%;right:0;height:1px;width:11px;transform:translateY(-50%)}
+.crosshair b{position:absolute;left:50%;top:50%;width:3px;height:3px;border-radius:50%;background:var(--live);transform:translate(-50%,-50%)}
+.pov-hud{position:absolute;z-index:3;font:500 9px var(--mono);color:var(--dim);letter-spacing:.1em;line-height:1.7}
+.pov-hud.top{left:16px;top:30px}
+.pov-hud.top b{display:block;color:var(--amber);font-size:11px;letter-spacing:.04em}
+.pov-hud.bottom{right:16px;bottom:28px;text-align:right}
+.pov-hud.bottom b{color:var(--mint);font-size:11px}
+.ping{
+  position:absolute;width:12px;height:12px;border:1px solid var(--amber);border-radius:50%;
+  transform:translate(-50%,-50%);pointer-events:none;z-index:9;animation:ping 1.1s ease-out forwards;
+}
+@keyframes ping{0%{opacity:1;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(3.2)}}
+
+/* self / debug preview */
+.feed-debug{display:none}
+.app.debug-mode .feed:not(.feed-debug){display:none}
+.app.debug-mode .feed-debug{display:flex;grid-column:1/-1;grid-row:1/-1}
+.debug-tag{
+  font:500 9px var(--mono);letter-spacing:.06em;color:var(--amber);
+  border:1px solid var(--amber-line);background:var(--amber-soft);padding:3px 6px;border-radius:4px;
+}
+.screen-self{background:#0a0c0a}
+.self-frame{position:absolute;inset:11%;border:1px solid var(--amber-line);background:rgba(255,176,32,.025)}
+.self-grid{
+  position:absolute;inset:0;opacity:.8;
+  background-image:linear-gradient(var(--hud) 1px,transparent 1px),linear-gradient(90deg,var(--hud) 1px,transparent 1px);
+  background-size:30px 30px;
+}
+.self-reticle{position:absolute;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%)}
+.self-reticle::before,.self-reticle::after{content:'';position:absolute;background:var(--amber)}
+.self-reticle::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%)}
+.self-reticle::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%)}
+.self-reticle i{position:absolute;left:50%;top:50%;width:5px;height:5px;border-radius:50%;background:var(--live);transform:translate(-50%,-50%)}
+.self-marker{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 4px rgba(111,220,154,.12);transform:translate(-50%,-50%)}
+.self-marker::before{content:attr(data-label);position:absolute;left:11px;top:-4px;white-space:nowrap;font:500 9px var(--mono);color:var(--dim)}
+.self-scan{
+  position:absolute;left:0;right:0;height:1px;top:0;background:linear-gradient(90deg,transparent,rgba(255,176,32,.55),transparent);
+  animation:self-scan 4.5s linear infinite;
+}
+@keyframes self-scan{from{top:0}to{top:100%}}
+.self-cam{
+  position:absolute;right:14px;bottom:14px;width:74px;height:54px;border:1px solid var(--amber-line);
+  border-radius:5px;background:var(--surface);display:grid;place-items:center;
+}
+.self-cam b{font-family:var(--display);font-size:24px;font-weight:700;color:var(--amber);line-height:1}
+.self-cam span{position:absolute;left:5px;top:4px;font:500 8px var(--mono);color:var(--mint);letter-spacing:.08em}
+.debug-banner{
+  position:absolute;left:0;right:0;top:0;z-index:5;display:flex;align-items:center;gap:7px;
+  padding:7px 12px;background:var(--amber-soft);border-bottom:1px solid var(--amber-line);
+  font-size:10px;color:var(--amber);letter-spacing:.02em;
+}
+.debug-banner i{width:6px;height:6px;border-radius:50%;background:var(--amber);flex:0 0 6px}
+.self-status{display:flex;align-items:center;gap:7px}
+.self-status b{color:var(--mint);font-weight:500}
+/* debug feed keeps dark tokens even under light theme */
+.feed-debug{--text:#e9e7e0;--dim:#a5a194;--mute:#7b786e;--line:rgba(255,255,255,.11)}
+.debug-body{flex:1;min-height:0;min-width:0;display:flex;overflow:hidden}
+.debug-body .screen{flex:1;min-width:0}
+.debug-info{
+  flex:0 0 302px;min-width:0;display:flex;flex-direction:column;
+  padding:13px 13px 11px;
+  border-left:1px solid var(--amber-line);
+  background:linear-gradient(155deg,rgba(13,15,13,.97),rgba(6,8,7,.94));
+  box-shadow:inset 1px 0 0 rgba(255,255,255,.03);
+  overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--amber-line) transparent;
+}
+.debug-info-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid var(--amber-line);
+}
+.debug-info-head b{font:600 11px var(--display);color:var(--amber);letter-spacing:.06em}
+.debug-info-head span{font:500 8px var(--mono);color:var(--mint);letter-spacing:.08em}
+.debug-row{display:flex;flex-direction:column;gap:3px;padding:4px 0}
+.debug-row.inline{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}
+.debug-row .dk{font:500 9px var(--mono);color:var(--dim);letter-spacing:.04em;white-space:nowrap}
+.debug-row.inline .dk{flex:1;min-width:0}
+.debug-line{display:flex;align-items:center;gap:6px;min-width:0}
+.debug-row .dv{font:600 10.5px var(--mono);color:var(--text);word-break:break-all;line-height:1.35}
+.debug-copy{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;
+  border:1px solid var(--line);border-radius:5px;background:rgba(255,255,255,.05);
+  color:var(--dim);padding:3px 6px;font-size:9px;min-height:22px;transition:.2s;
+}
+.debug-copy:hover{color:var(--amber);border-color:var(--amber-line)}
+.debug-copy.done{color:var(--mint);border-color:rgba(111,220,154,.45)}
+.debug-copy svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- battle / fullscreen view ---------- */
+.battle-view{
+  --amber:#ffb020;--amber-line:rgba(255,176,32,.30);--amber-soft:rgba(255,176,32,.13);
+  --text:#f3f0e6;--dim:#a5a297;--mute:#6f6d64;--surface:#191a17;--surface2:#22231f;--surface3:#2b2c27;
+  --line:rgba(243,240,230,.12);--live:#ff5a3c;--mint:#6fdc9a;--hud:rgba(255,176,32,.10);
+  position:absolute;inset:0;z-index:200;background:#050605;display:flex;flex-direction:column;
+  font-family:var(--body);color:var(--text);
+}
+.battle-view[hidden]{display:none}
+.battle-stage{position:absolute;inset:0;display:grid;gap:2px;padding:2px;overflow:hidden}
+.battle-view.landscape .battle-stage{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
+.battle-view.portrait .battle-stage{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+.battle-view.solo .battle-stage{grid-template-columns:1fr;grid-template-rows:1fr}
+.battle-view .feed{border:0;border-radius:0;background:#0a0c0a;min-width:0;min-height:0;position:relative}
+.battle-view.solo .feed:not(.is-solo){display:none}
+.battle-view .feed-foot{display:none}
+.battle-view .feed-head{
+  position:absolute;left:0;right:0;top:0;z-index:6;border-bottom:0;
+  background:linear-gradient(to bottom,rgba(5,6,5,.34),rgba(5,6,5,.03));
+  padding:8px 12px;text-shadow:0 1px 3px rgba(0,0,0,.9);
+}
+.battle-view .screen::before,.battle-view .screen::after{width:22px;height:22px;opacity:.9}
+.battle-view .screen::before{left:14px;top:14px}
+.battle-view .screen::after{right:14px;bottom:14px}
+.battle-view [data-focus]{display:none}
+.battle-solo-btn{
+  display:grid;place-items:center;width:24px;height:24px;border:1px solid rgba(255,176,32,.3);
+  border-radius:5px;background:rgba(255,176,32,.1);color:var(--amber);
+}
+.battle-solo-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.7}
+.battle-solo-btn:hover{background:var(--amber);color:#191408}
+.battle-view .battle-quit-btn{
+  display:flex;align-items:center;gap:5px;width:auto;height:24px;padding:0 8px;border-radius:5px;
+  border:1px solid rgba(255,90,60,.5);background:rgba(255,90,60,.13);color:var(--live);
+  font:600 10px var(--body);letter-spacing:.03em;transition:.2s;
+}
+.battle-view .battle-quit-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.battle-view .battle-quit-btn:hover{background:var(--live);color:#fff;border-color:var(--live)}
+@container app (max-width:560px){
+  .battle-view .feed-head{padding:6px 9px}
+  .battle-view .battle-quit-btn span{display:none}
+  .battle-view .battle-quit-btn{width:24px;padding:0;justify-content:center}
+}
+
+/* ---------- control bar ---------- */
+.control{
+  flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-top:1px solid var(--line);background:var(--surface);
+}
+.self-card{display:flex;align-items:center;gap:8px;min-width:0}
+.self-av{
+  width:30px;height:30px;flex:0 0 30px;border-radius:6px;display:grid;place-items:center;
+  border:1px solid var(--amber-line);background:var(--amber-soft);
+  font-family:var(--display);font-size:16px;font-weight:700;color:var(--amber);
+}
+.self-info{display:flex;flex-direction:column;line-height:1.3}
+.self-info b{font-family:var(--mono);font-size:10px}
+.self-info span{font-size:9px;color:var(--dim);white-space:nowrap}
+.btn-stream{
+  margin-left:auto;display:flex;align-items:center;gap:8px;border:1px solid var(--amber-line);
+  background:var(--amber-soft);color:var(--amber);border-radius:8px;padding:0 16px;height:38px;
+  font-size:11.5px;font-weight:700;letter-spacing:.02em;transition:.22s;white-space:nowrap;
+}
+.btn-stream:hover{background:var(--amber);color:#191408}
+.btn-stream.is-live{background:var(--live);border-color:var(--live);color:#fff}
+.btn-stream.is-live:hover{filter:brightness(1.08)}
+.btn-stream i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.btn-stream.is-live i{animation:blink 1.6s ease-in-out infinite}
+.ctrl-group{display:flex;gap:5px}
+.net{font:500 9px var(--mono);color:var(--mute);letter-spacing:.04em;white-space:nowrap}
+.net b{color:var(--mint);font-weight:500}
+
+/* ---------- responsive: container queries ---------- */
+@container app (max-width: 1000px) {
+  .net{display:none}
+}
+@container app (max-width: 560px) {
+  .app-head{padding:9px 11px;gap:8px}
+  .session-title{font-size:15px}
+  .session-meta{font-size:9px}
+  .session-meta #modeHint{display:none}
+  .crew{gap:3px}
+  .crew-chip{padding:5px 6px}
+  .crew-chip .who{display:none}
+  .icon-btn{width:30px;height:30px;flex-basis:30px}
+  .feeds{grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:7px;padding:8px}
+  .peer-id{font-size:17px}
+  .peer-online em{display:none}
+  .feed-head{padding:7px 9px}
+  .feed-foot{padding:5px 9px}
+  .control{padding:8px 10px;gap:7px}
+  .self-card{display:none}
+  .btn-stream{padding:0 12px;height:36px;font-size:11px}
+  .debug-info{flex:0 0 46%;padding:9px 8px}
+  .feed-debug .self-cam{display:none}
+  .debug-info-head b{font-size:10px}
+  .debug-info-head span{display:none}
+  .debug-row{padding:3px 0}
+  .debug-row .dk{font-size:8px}
+  .debug-row .dv{font-size:9px}
+  .debug-row.inline .dk{font-size:8px}
+  .debug-copy{font-size:8px;padding:2px 4px;min-height:19px}
+}
+.feeds.focused .feed:not(.is-focused){display:none}
+.feeds.focused .feed.is-focused{grid-column:1/-1;grid-row:1/-1}
+/* ---------- room lobby / entry system ---------- */
+.lobby{
+  position:absolute;inset:0;z-index:300;display:flex;overflow:auto;
+  flex-direction:column;background-color:var(--bg);
+  background-image:
+    radial-gradient(ellipse at 50% 42%,var(--amber-soft),transparent 52%),
+    linear-gradient(var(--hud) 1px,transparent 1px),
+    linear-gradient(90deg,var(--hud) 1px,transparent 1px);
+  background-size:auto,42px 42px,42px 42px;
+}
+.lobby[hidden]{display:none}
+.lobby-bar{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:13px 18px;border-bottom:1px solid var(--line);
+}
+.lobby-sys{display:flex;align-items:center;gap:8px;font:500 10px var(--mono);color:var(--dim);letter-spacing:.08em}
+.lobby-sys i{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(111,220,154,.16);animation:blink 2.4s infinite}
+.lobby-sys span{color:var(--mute)}
+.lobby-ver{font:400 9px var(--mono);color:var(--mute);letter-spacing:.1em}
+.lobby-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(20px,4vh,38px);padding:30px 22px}
+.lobby-emblem{position:relative;width:86px;height:86px;flex:0 0 86px;display:grid;place-items:center}
+.lobby-emblem::before,.lobby-emblem::after{content:'';position:absolute;border-radius:50%;border:1px solid var(--amber-line)}
+.lobby-emblem::before{inset:0;border-style:dashed;animation:spin 26s linear infinite}
+.lobby-emblem::after{inset:14px;border-color:var(--amber)}
+.lobby-emblem .ring{position:absolute;inset:26px;border:1px solid var(--amber-line);border-radius:50%}
+.lobby-emblem .core{width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 14px var(--live)}
+.lobby-emblem .tick{position:absolute;width:1px;height:10px;background:var(--amber);top:-5px;left:50%;transform-origin:50% 48px}
+.lobby-emblem .tick.t2{transform:rotate(90deg)}
+.lobby-emblem .tick.t3{transform:rotate(180deg)}
+.lobby-emblem .tick.t4{transform:rotate(270deg)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lobby-copy{text-align:center;max-width:560px}
+.lobby-kicker{font:500 10px var(--mono);color:var(--amber);letter-spacing:.24em}
+.lobby-title{
+  font:700 clamp(34px,6vw,58px)/1.02 var(--display);letter-spacing:.03em;margin-top:10px;
+}
+.lobby-title em{font-style:normal;color:var(--amber)}
+.lobby-sub{margin-top:12px;font-size:12px;line-height:1.75;color:var(--dim)}
+.lobby-actions{display:flex;gap:12px;width:min(620px,100%)}
+.lobby-btn{
+  flex:1;display:flex;align-items:center;gap:13px;text-align:left;min-width:0;
+  padding:16px;border:1px solid var(--line2);border-radius:var(--r2);
+  background:var(--surface);color:var(--text);transition:transform .25s ease,border-color .25s ease,background .25s ease;
+}
+.lobby-btn:hover{transform:translateY(-3px);border-color:var(--amber-line);background:var(--surface2)}
+.lobby-btn.primary{background:var(--amber);border-color:var(--amber);color:#191408}
+.lobby-btn.primary:hover{background:color-mix(in srgb,var(--amber) 84%,#fff)}
+.lobby-btn .lb-ico{width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--amber-line);color:var(--amber)}
+.lobby-btn.primary .lb-ico{border-color:rgba(25,20,8,.28);color:#191408}
+.lobby-btn .lb-ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.lobby-btn .lb-txt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.lobby-btn .lb-txt b{font:600 17px var(--display);letter-spacing:.05em}
+.lobby-btn .lb-txt em{font-style:normal;font-size:10px;line-height:1.4;color:var(--dim)}
+.lobby-btn.primary .lb-txt em{color:rgba(25,20,8,.66)}
+.lobby-btn .lb-arr{margin-left:auto;font:500 18px var(--mono);opacity:.6}
+.lobby-foot{flex:0 0 auto;display:flex;justify-content:space-between;gap:10px;padding:12px 18px;border-top:1px solid var(--line);font:400 9px var(--mono);color:var(--mute);letter-spacing:.08em}
+
+.hero-block{display:flex;flex-direction:column;align-items:center;gap:clamp(20px,4vh,38px)}
+.stage-created,.stage-join{display:none;width:min(560px,100%);margin:auto;gap:18px}
+.lobby[data-stage="created"] .stage-created,
+.lobby[data-stage="join"] .stage-join{display:flex;flex-direction:column}
+.lobby[data-stage="created"] .stage-home,
+.lobby[data-stage="join"] .stage-home{display:none}
+.lobby[data-stage="created"] .hero-block,
+.lobby[data-stage="join"] .hero-block{display:none}
+.stage-card{border:1px solid var(--line2);border-radius:var(--r2);background:var(--surface);padding:clamp(16px,3vw,24px)}
+.created-head{display:flex;align-items:center;gap:11px}
+.created-check{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:50%;background:var(--mint);color:#08150d}
+.created-check svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.created-head b{font:600 20px var(--display);letter-spacing:.04em}
+.created-head em{font-style:normal;display:block;font:400 10px var(--mono);color:var(--dim);margin-top:3px;letter-spacing:.06em}
+.room-code-wrap{text-align:center;padding:20px 0 18px;border-bottom:1px dashed var(--line2)}
+.room-code-label{font:500 9px var(--mono);color:var(--mute);letter-spacing:.2em}
+.room-code{font:700 clamp(30px,6vw,46px)/1.1 var(--display);letter-spacing:.18em;color:var(--amber);margin-top:7px;word-break:break-all}
+.cred-list{display:flex;flex-direction:column;gap:1px;margin-top:2px}
+.cred{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.cred:last-child{border-bottom:0}
+.cred-info{flex:1;min-width:0}
+.cred-info span{display:block;font:500 9px var(--mono);color:var(--mute);letter-spacing:.1em}
+.cred-info b{display:block;font:500 11px var(--mono);color:var(--text);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copy-btn{
+  flex:0 0 auto;display:flex;align-items:center;gap:5px;height:29px;padding:0 10px;
+  border:1px solid var(--amber-line);border-radius:6px;background:var(--amber-soft);color:var(--amber);
+  font:500 10px var(--mono);transition:.2s;
+}
+.copy-btn:hover{background:var(--amber);color:#191408}
+.copy-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.copy-btn.done{background:var(--mint);border-color:var(--mint);color:#08150d}
+.obs-note{display:flex;gap:8px;align-items:flex-start;font-size:10px;line-height:1.6;color:var(--dim);margin-top:12px}
+.obs-note i{font:600 12px var(--mono);color:var(--amber);font-style:normal}
+.lobby-cta{width:100%;display:flex;gap:10px;margin-top:2px}
+.lobby-cta button{flex:1;height:42px;border-radius:8px;font-size:12px;font-weight:600;transition:.2s}
+.btn-enter{border:0;background:var(--amber);color:#191408}
+.btn-enter:hover{background:color-mix(in srgb,var(--amber) 84%,#fff)}
+.btn-back{border:1px solid var(--line2);background:var(--surface);color:var(--dim)}
+.btn-back:hover{color:var(--text);border-color:var(--amber-line)}
+.join-field{display:flex;flex-direction:column;gap:8px}
+.join-field label{font:500 9px var(--mono);color:var(--mute);letter-spacing:.14em}
+.join-field input{
+  width:100%;height:46px;padding:0 14px;border:1px solid var(--line2);border-radius:8px;
+  background:var(--bg);color:var(--text);font:600 17px var(--mono);letter-spacing:.16em;text-transform:uppercase;
+}
+.join-field input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-soft)}
+.join-field input::placeholder{color:var(--mute);letter-spacing:.08em;font-weight:400}
+.join-err{min-height:14px;font:400 10px var(--mono);color:var(--live)}
+.toast{
+  position:absolute;left:50%;bottom:54px;transform:translate(-50%,10px);z-index:340;
+  padding:9px 16px;border-radius:20px;background:var(--surface3);border:1px solid var(--amber-line);
+  color:var(--text);font:500 11px var(--body);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.room-badge{
+  display:flex;align-items:center;gap:6px;height:26px;padding:0 8px;border:1px solid var(--amber-line);
+  border-radius:6px;background:var(--amber-soft);font:500 10px var(--mono);color:var(--amber);white-space:nowrap;
+}
+.room-badge i{width:5px;height:5px;border-radius:50%;background:var(--mint)}
+.leave-btn{width:30px;height:30px;flex:0 0 30px}
+@container app (max-width:560px){
+  .lobby-bar{padding:10px 12px}
+  .lobby-ver{display:none}
+  .lobby-title{font-size:38px;letter-spacing:.02em}
+  .lobby-sub{font-size:11px}
+  .lobby-main{padding:20px 14px;gap:20px}
+  .lobby-emblem{width:64px;height:64px;flex-basis:64px}
+  .lobby-emblem::after{inset:11px}
+  .lobby-emblem .ring{inset:20px}
+  .lobby-emblem .tick{transform-origin:50% 36px}
+  .lobby-actions{flex-direction:column;gap:9px}
+  .lobby-btn{padding:12px}
+  .lobby-btn .lb-ico{width:34px;height:34px;flex-basis:34px}
+  .lobby-btn .lb-txt b{font-size:15px}
+  .lobby-foot{font-size:8px;padding:9px 12px}
+  .lobby-foot span:last-child{display:none}
+  .cred{flex-wrap:wrap}
+  .cred-info b{white-space:normal;word-break:break-all}
+  .room-badge{font-size:9px;padding:0 6px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<header class="stage-head">
+  <div class="brand">
+    <div class="brand-mark"><i></i></div>
+    <div>
+      <div class="brand-name">fighting<span>+</span></div>
+      <div class="brand-sub">战术协作系统 · tactical link</div>
+    </div>
+  </div>
+  <div class="stage-tools">
+    <div class="dev-switch" role="group" aria-label="切换预览设备">
+      <button class="dev-btn active" data-device="pc" aria-pressed="true">
+        <svg viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="11" rx="1.5"/><path d="M7 17h6M10 14v3"/></svg>PC 端
+      </button>
+      <button class="dev-btn" data-device="desktop" aria-pressed="false">
+        <svg viewBox="0 0 20 20"><rect x="2.5" y="3" width="15" height="13" rx="1.5"/><path d="M2.5 6.5h15M5 4.7h.01M7 4.7h.01"/></svg>桌面客户端
+      </button>
+      <button class="dev-btn" data-device="tablet" aria-pressed="false">
+        <svg viewBox="0 0 20 20"><rect x="4" y="2" width="12" height="16" rx="2"/><path d="M9 15h2"/></svg>平板端
+      </button>
+      <button class="dev-btn" data-device="mobile" aria-pressed="false">
+        <svg viewBox="0 0 20 20"><rect x="6" y="2" width="8" height="16" rx="2"/><path d="M9 15h2"/></svg>手机端
+      </button>
+    </div>
+    <span class="hint">点击画面可投放战术标点</span>
+  </div>
+</header>
+
+<main class="stage">
+  <div class="device-frame" id="frame">
+    <div class="win-titlebar">
+      <div class="win-lights"><i></i><i></i><i></i></div>
+      <div class="win-title">
+        <span class="wicon">+</span><b>fighting+</b><span>战术协作系统</span><span class="win-badge">DESKTOP</span><em>v1.0.4</em>
+      </div>
+      <div class="win-controls">
+        <i><svg viewBox="0 0 14 14"><path d="M2 7h10"/></svg></i>
+        <i><svg viewBox="0 0 14 14"><rect x="2.5" y="2.5" width="9" height="9" rx="1"/></svg></i>
+        <i><svg viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8"/></svg></i>
+      </div>
+    </div>
+    <div class="app" id="app">
+
+      <div class="lobby" id="lobby" data-stage="home">
+        <div class="lobby-bar">
+          <div class="lobby-sys"><i></i> SYSTEM ONLINE <span>·</span> 战术链路待建立</div>
+          <div class="lobby-ver">v1.0.4 / SECURE LINK</div>
+        </div>
+        <div class="lobby-main">
+          <div class="hero-block">
+            <div class="lobby-emblem">
+              <span class="tick"></span><span class="tick t2"></span><span class="tick t3"></span><span class="tick t4"></span>
+              <span class="ring"></span><span class="core"></span>
+            </div>
+            <div class="lobby-copy">
+              <div class="lobby-kicker">TACTICAL LINK · INITIALIZE</div>
+              <h1 class="lobby-title">建立<em>战术链路</em></h1>
+              <p class="lobby-sub">三人小队实时画面共享 · 战场信息同步 · 一键进入作战协同</p>
+            </div>
+          </div>
+
+          <div class="stage-home lobby-actions">
+            <button class="lobby-btn primary" id="createRoomBtn">
+              <span class="lb-ico"><svg viewBox="0 0 20 20"><path d="M10 3v14M3 10h14"/></svg></span>
+              <span class="lb-txt"><b>创建房间</b><em>生成 OBS 推流码，开启新链路</em></span>
+              <span class="lb-arr">→</span>
+            </button>
+            <button class="lobby-btn" id="joinRoomBtn">
+              <span class="lb-ico"><svg viewBox="0 0 20 20"><path d="M8 3H4v14h4M12 6l4 4-4 4M8 10h8"/></svg></span>
+              <span class="lb-txt"><b>加入房间</b><em>输入房间码，进入队友链路</em></span>
+              <span class="lb-arr">→</span>
+            </button>
+          </div>
+
+          <div class="stage-created" id="createdStage">
+            <div class="stage-card">
+              <div class="created-head">
+                <span class="created-check"><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-8"/></svg></span>
+                <div><b>房间已建立</b><em>CHANNEL READY · 等待队员推流</em></div>
+              </div>
+              <div class="room-code-wrap">
+                <div class="room-code-label">ROOM CODE · 房间码</div>
+                <div class="room-code" id="roomCode">FP-A7K2M9</div>
+              </div>
+              <div class="cred-list">
+                <div class="cred">
+                  <div class="cred-info"><span>OBS 服务器 · SERVER</span><b id="serverUrl">rtmp://push.fighting-plus.cn/live</b></div>
+                  <button class="copy-btn" data-copy="serverUrl"><svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg><span>复制</span></button>
+                </div>
+                <div class="cred">
+                  <div class="cred-info"><span>串流密钥 · STREAM KEY</span><b id="streamKey">fp_live_a7k2m9_8f3c1d</b></div>
+                  <button class="copy-btn" data-copy="streamKey"><svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg><span>复制</span></button>
+                </div>
+              </div>
+              <div class="obs-note"><i>▲</i><span>将服务器与串流密钥填入 OBS「设置 → 推流」，开始推流后队友即可看到你的画面。</span></div>
+            </div>
+            <div class="lobby-cta">
+              <button class="btn-back" id="createdBackBtn">返回</button>
+              <button class="btn-enter" id="enterRoomBtn">进入房间 →</button>
+            </div>
+          </div>
+
+          <div class="stage-join" id="joinStage">
+            <div class="stage-card">
+              <div class="created-head">
+                <span class="created-check" style="background:var(--amber-soft);color:var(--amber)"><svg viewBox="0 0 20 20"><path d="M8 3H4v14h4M12 6l4 4-4 4M8 10h8"/></svg></span>
+                <div><b>加入战术链路</b><em>ENTER ROOM CODE</em></div>
+              </div>
+              <form class="join-field" id="joinForm" style="margin-top:18px">
+                <label for="joinInput">输入 8 位房间码</label>
+                <input id="joinInput" maxlength="12" autocomplete="off" spellcheck="false" placeholder="FP-A7K2M9">
+                <div class="join-err" id="joinErr"></div>
+              </form>
+            </div>
+            <div class="lobby-cta">
+              <button class="btn-back" id="joinBackBtn">返回</button>
+              <button class="btn-enter" id="joinSubmitBtn">加入房间 →</button>
+            </div>
+          </div>
+        </div>
+        <div class="lobby-foot"><span>▲ 需要有 OBS 推流设备</span><span>ENCRYPTED · P2P RELAY</span></div>
+        <div class="toast" id="lobbyToast"></div>
+      </div>
+
+      <div class="app-head">
+        <div class="session">
+          <div class="session-title">战术链路 · <span id="roomLabel">ALPHA-07</span></div>
+          <div class="session-meta">SESSION <b>● 已连接</b> · 3/3 在线<span id="modeHint"></span></div>
+        </div>
+        <div class="crew" aria-label="队员状态">
+          <button class="crew-chip self live debug-btn" id="debugBtn" aria-pressed="false" aria-label="调试：查看自己的画面" title="调试：查看自己的画面">
+            <svg viewBox="0 0 16 16"><path d="M2 5V2h3M14 5V2h-3M2 11v3h3M14 11v3h-3"/><circle cx="8" cy="8" r="2"/></svg><span class="who">A</span><span>调试</span>
+          </button>
+          <button class="crew-chip battle-btn" id="battleBtn" aria-pressed="false" aria-label="进入作战视图" title="进入作战视图">
+            <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg><span>作战</span>
+          </button>
+          <div class="orient-picker" id="orientPicker" hidden>
+            <div class="orient-title">选择画面排列 · 进入后不可更改</div>
+            <button type="button" class="orient-opt active" data-orient="landscape" aria-pressed="true">
+              <svg viewBox="0 0 26 26"><rect x="2" y="4" width="10" height="18" rx="1.5"/><rect x="14" y="4" width="10" height="18" rx="1.5"/></svg>
+              <span><b>横屏并列</b><em>左右各占一半</em></span>
+            </button>
+            <button type="button" class="orient-opt" data-orient="portrait" aria-pressed="false">
+              <svg viewBox="0 0 26 26"><rect x="4" y="2" width="18" height="10" rx="1.5"/><rect x="4" y="14" width="18" height="10" rx="1.5"/></svg>
+              <span><b>竖屏并列</b><em>上下各占一半</em></span>
+            </button>
+          </div>
+        </div>
+        <div class="room-badge" id="roomBadge" title="当前房间"><i></i><span id="roomBadgeCode">ALPHA-07</span></div>
+        <button class="icon-btn" id="themeBtn" aria-label="切换主题" title="切换明暗主题">
+          <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="3.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.4 4.4l1.4 1.4M14.2 14.2l1.4 1.4M15.6 4.4l-1.4 1.4M5.8 14.2l-1.4 1.4"/></svg>
+        </button>
+        <button class="icon-btn leave-btn" id="leaveBtn" aria-label="离开房间返回大厅" title="离开房间">
+          <svg viewBox="0 0 20 20"><path d="M8 4H4v12h4M12 6l4 4-4 4M8 10h8"/></svg>
+        </button>
+      </div>
+
+      <div class="app-body">
+        <section class="feeds" id="feeds" aria-label="队友实时画面">
+
+          <article class="feed">
+            <div class="feed-head">
+              <div class="peer"><span class="peer-id">B</span><span class="peer-name">猎隼 · 战术地图</span><span class="peer-online"><i></i><em>在线</em></span></div>
+              <div class="feed-tools">
+                <span class="live-tag">LIVE</span>
+                <button title="聚焦画面" data-focus aria-label="聚焦队友 B 的画面"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></button>
+                <button class="battle-solo-btn" data-solo title="单画面全屏" aria-label="队友 B 画面单画面全屏"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></button>
+                <button class="battle-quit-btn" data-quit title="退出作战" aria-label="退出作战"><svg viewBox="0 0 20 20"><path d="M8 4H4v12h4M12 6l4 4-4 4M8 10h8"/></svg><span>退出</span></button>
+              </div>
+            </div>
+            <div class="screen screen-map" data-screen>
+              <div class="grid-lines"></div>
+              <div class="sweep"></div>
+              <div class="route" style="left:28%;top:34%;width:23%;transform:rotate(28deg)"></div>
+              <div class="route" style="left:51%;top:48%;width:20%;transform:rotate(-34deg)"></div>
+              <span class="blip ally" style="--x:28%;--y:34%" data-label="B-01"></span>
+              <span class="blip ally" style="--x:51%;--y:48%" data-label="B-02"></span>
+              <span class="blip ally" style="--x:71%;--y:34%" data-label="B-03"></span>
+              <span class="blip foe" style="--x:63%;--y:70%" data-label="目标 ×3"></span>
+              <span class="blip foe" style="--x:35%;--y:76%" data-label="目标 ×2"></span>
+              <span class="hud-line tl">SECTOR 04 / NORTH</span>
+              <span class="hud-line br">SYNC 60FPS</span>
+            </div>
+            <div class="feed-foot"><span class="js-timer" data-base="754">00:12:34</span><span>码率 <strong>6.2 Mbps</strong> · 延迟 <span class="lat">48ms</span></span></div>
+          </article>
+
+          <article class="feed">
+            <div class="feed-head">
+              <div class="peer"><span class="peer-id">C</span><span class="peer-name">夜枭 · 第一视角</span><span class="peer-online"><i></i><em>在线</em></span></div>
+              <div class="feed-tools">
+                <span class="live-tag">LIVE</span>
+                <button title="聚焦画面" data-focus aria-label="聚焦队友 C 的画面"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></button>
+                <button class="battle-solo-btn" data-solo title="单画面全屏" aria-label="队友 C 画面单画面全屏"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg></button>
+                <button class="battle-quit-btn" data-quit title="退出作战" aria-label="退出作战"><svg viewBox="0 0 20 20"><path d="M8 4H4v12h4M12 6l4 4-4 4M8 10h8"/></svg><span>退出</span></button>
+              </div>
+            </div>
+            <div class="screen screen-pov" data-screen>
+              <div class="pov-scene"></div>
+              <div class="ridge"></div>
+              <div class="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+              <div class="pov-hud top"><b>ENTRY POINT · B2</b>HP 84 / ARMOR 60<br>AMMO 24 / 90</div>
+              <div class="pov-hud bottom">THREAT <b>LOW</b><br>SYNC 60FPS</div>
+            </div>
+            <div class="feed-foot"><span class="js-timer" data-base="682">00:11:22</span><span>码率 <strong>5.8 Mbps</strong> · 延迟 <span class="lat">52ms</span></span></div>
+          </article>
+
+          <article class="feed feed-debug" id="debugFeed">
+            <div class="feed-head">
+              <div class="peer"><span class="peer-id">A</span><span class="peer-name">OBS 采集画面 · 队友可见</span></div>
+              <div class="feed-tools"><span class="debug-tag">DEBUG</span></div>
+            </div>
+            <div class="debug-body">
+            <div class="screen screen-self">
+              <div class="debug-banner"><i></i>调试模式 · 当前画面为 OBS 推流，队友可见</div>
+              <div class="self-frame">
+                <div class="self-grid"></div>
+                <div class="self-scan"></div>
+                <div class="self-reticle"><i></i></div>
+                <span class="self-marker" style="left:32%;top:40%" data-label="SELF-01"></span>
+                <span class="self-marker" style="left:66%;top:58%" data-label="SELF-02"></span>
+                <div class="self-cam"><span>CAM</span><b>A</b></div>
+              </div>
+            </div>
+            <div class="debug-info" aria-label="房间与推流调试信息">
+                <div class="debug-info-head"><b>房间信息 · ROOM INFO</b><span>DEBUG FEED</span></div>
+                <div class="debug-row inline">
+                  <span class="dk">房间码 · ROOM CODE</span>
+                  <b class="dv" id="debugRoom">FP-A7K2M9</b>
+                  <button class="debug-copy" data-copy="debugRoom" title="复制房间码" aria-label="复制房间码"><svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg><span>复制</span></button>
+                </div>
+                <div class="debug-row inline">
+                  <span class="dk">房间密码 · PASSCODE</span>
+                  <b class="dv" id="debugPass">FP-A7K2M9</b>
+                  <button class="debug-copy" data-copy="debugPass" title="复制房间密码" aria-label="复制房间密码"><svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg><span>复制</span></button>
+                </div>
+                <div class="debug-row stack">
+                  <span class="dk">OBS 服务器 · SERVER</span>
+                  <div class="debug-line">
+                    <b class="dv" id="debugServer">rtmp://push.fighting-plus.cn/live</b>
+                    <button class="debug-copy" data-copy="debugServer" title="复制服务器地址" aria-label="复制服务器地址"><svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg><span>复制</span></button>
+                  </div>
+                </div>
+                <div class="debug-row stack">
+                  <span class="dk">串流密钥 · STREAM KEY</span>
+                  <div class="debug-line">
+                    <b class="dv" id="debugStream">fp_live_a7k2m9_8f3c1d</b>
+                    <button class="debug-copy" data-copy="debugStream" title="复制串流密钥" aria-label="复制串流密钥"><svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"/></svg><span>复制</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="feed-foot">
+              <span class="js-timer" data-base="0">00:00:00</span>
+              <span class="self-status">采集 <b>正常</b> · 1920×1080 · 60FPS · H.264</span>
+            </div>
+          </article>
+
+        </section>
+      </div>
+
+      <footer class="control">
+        <div class="self-card">
+          <div class="self-av">A</div>
+          <div class="self-info"><b>你的画面</b><span id="selfState">直播中 · 已同步给 B / C</span></div>
+        </div>
+        <button class="btn-stream is-live" id="streamBtn" aria-pressed="true"><i></i><span id="streamLabel">停止战术直播</span></button>
+        <div class="ctrl-group">
+          <button class="icon-btn layout-btn" id="layoutBtn" aria-label="切换画面布局" title="切换布局">
+            <svg viewBox="0 0 20 20"><rect x="2" y="3" width="7" height="14" rx="1"/><rect x="11" y="3" width="7" height="6" rx="1"/><rect x="11" y="11" width="7" height="6" rx="1"/></svg>
+          </button>
+        </div>
+        <span class="net">网络 <b>稳定</b> · 38ms</span>
+      </footer>
+
+      <div class="battle-view landscape" id="battleView" hidden role="dialog" aria-label="作战视图">
+        <div class="battle-stage" id="battleStage"></div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  var frame=document.getElementById('frame');
+  var app=document.getElementById('app');
+  var feeds=document.getElementById('feeds');
+
+  document.querySelectorAll('.dev-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.dev-btn').forEach(function(b){
+        b.classList.remove('active');b.setAttribute('aria-pressed','false');
+      });
+      btn.classList.add('active');btn.setAttribute('aria-pressed','true');
+      frame.classList.remove('pc','desktop','tablet','mobile');
+      frame.classList.add(btn.dataset.device);
+    });
+  });
+
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var root=document.documentElement;
+    var next=root.getAttribute('data-theme')==='light'?'dark':'light';
+    root.setAttribute('data-theme',next);
+  });
+
+  var debugBtn=document.getElementById('debugBtn');
+  var modeHint=document.getElementById('modeHint');
+  debugBtn.addEventListener('click',function(){
+    var on=!app.classList.contains('debug-mode');
+    clearFocus();
+    app.classList.toggle('debug-mode',on);
+    debugBtn.classList.toggle('active',on);
+    debugBtn.setAttribute('aria-pressed',String(on));
+    modeHint.textContent=on?' · DEBUG OBS 画面':'';
+  });
+
+  /* battle view */
+  var battleView=document.getElementById('battleView');
+  var battleStage=document.getElementById('battleStage');
+  var battleBtn=document.getElementById('battleBtn');
+  var orientPicker=document.getElementById('orientPicker');
+  var battleFeeds=Array.prototype.slice.call(feeds.querySelectorAll('.feed:not(.feed-debug)'));
+  var placeholders=[];
+  var pendingOrient='landscape';
+
+  function setOrient(mode){
+    battleView.classList.remove('landscape','portrait');
+    battleView.classList.add(mode);
+    document.querySelectorAll('[data-orient]').forEach(function(b){
+      var active=b.dataset.orient===mode;
+      b.classList.toggle('active',active);
+      b.setAttribute('aria-pressed',String(active));
+    });
+  }
+  function exitSolo(){
+    battleView.classList.remove('solo');
+    battleFeeds.forEach(function(f){f.classList.remove('is-solo');});
+  }
+  function toggleSolo(feed){
+    if(battleView.classList.contains('solo')&&feed.classList.contains('is-solo')){
+      exitSolo();return;
+    }
+    battleView.classList.add('solo');
+    battleFeeds.forEach(function(f){f.classList.toggle('is-solo',f===feed);});
+  }
+  function exitBattle(){
+    exitSolo();
+    battleFeeds.forEach(function(feed,i){
+      var ph=placeholders[i];
+      if(ph&&ph.parentNode){ph.parentNode.replaceChild(feed,ph);}
+    });
+    placeholders=[];
+    battleView.hidden=true;
+    battleBtn.classList.remove('active');
+    battleBtn.setAttribute('aria-pressed','false');
+  }
+  function enterBattle(){
+    if(app.classList.contains('debug-mode')){debugBtn.click();}
+    clearFocus();
+    battleFeeds.forEach(function(feed){
+      var ph=document.createElement('span');
+      ph.className='feed-placeholder';
+      feed.parentNode.insertBefore(ph,feed);
+      placeholders.push(ph);
+      battleStage.appendChild(feed);
+    });
+    setOrient(pendingOrient);
+    exitSolo();
+    battleView.hidden=false;
+    battleBtn.classList.add('active');
+    battleBtn.setAttribute('aria-pressed','true');
+  }
+  battleBtn.addEventListener('click',function(e){
+    e.stopPropagation();
+    if(!battleView.hidden){return;}
+    orientPicker.hidden=!orientPicker.hidden;
+  });
+  battleFeeds.forEach(function(feed){
+    var quit=feed.querySelector('[data-quit]');
+    if(quit){quit.addEventListener('click',function(e){e.stopPropagation();exitBattle();});}
+  });
+  document.querySelectorAll('[data-orient]').forEach(function(b){
+    b.addEventListener('click',function(){
+      pendingOrient=b.dataset.orient;
+      setOrient(pendingOrient);
+      orientPicker.hidden=true;
+      enterBattle();
+    });
+  });
+  document.addEventListener('click',function(e){
+    if(!orientPicker.hidden&&!orientPicker.contains(e.target)&&!battleBtn.contains(e.target)){
+      orientPicker.hidden=true;
+    }
+  });
+  battleFeeds.forEach(function(feed){
+    var btn=feed.querySelector('[data-solo]');
+    if(btn){btn.addEventListener('click',function(e){e.stopPropagation();toggleSolo(feed);});}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&!battleView.hidden){exitBattle();}
+  });
+
+  var streamBtn=document.getElementById('streamBtn');
+  var streamLabel=document.getElementById('streamLabel');
+  var selfState=document.getElementById('selfState');
+  streamBtn.addEventListener('click',function(){
+    var live=streamBtn.classList.toggle('is-live');
+    streamBtn.setAttribute('aria-pressed',String(live));
+    streamLabel.textContent=live?'停止战术直播':'开启战术直播';
+    selfState.textContent=live?'直播中 · 已同步给 B / C':'未开播 · 画面未同步';
+  });
+
+  var focusBtn=null;
+  function clearFocus(){
+    feeds.classList.remove('focused');
+    feeds.querySelectorAll('.feed').forEach(function(f){f.classList.remove('is-focused');});
+    focusBtn=null;
+  }
+  feeds.querySelectorAll('[data-focus]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var card=this.closest('.feed');
+      if(focusBtn===this){clearFocus();return;}
+      clearFocus();
+      feeds.classList.add('focused');card.classList.add('is-focused');focusBtn=this;
+    });
+  });
+  document.getElementById('layoutBtn').addEventListener('click',function(){
+    var targets=feeds.querySelectorAll('[data-focus]');
+    if(feeds.classList.contains('focused')){clearFocus();}
+    else{targets[0].click();}
+  });
+  document.querySelectorAll('[data-screen]').forEach(function(screen){
+    screen.addEventListener('click',function(e){
+      if(!battleView.hidden){
+        toggleSolo(screen.closest('.feed'));
+        return;
+      }
+      var r=screen.getBoundingClientRect();
+      var p=document.createElement('span');p.className='ping';
+      p.style.left=(e.clientX-r.left)+'px';p.style.top=(e.clientY-r.top)+'px';
+      screen.appendChild(p);
+      window.setTimeout(function(){if(p.parentNode)p.parentNode.removeChild(p);},1100);
+    });
+  });
+
+  function fmt(total){
+    var h=Math.floor(total/3600),m=Math.floor(total%3600/60),s=total%60;
+    return [h,m,s].map(function(n){return String(n).padStart(2,'0');}).join(':');
+  }
+  window.setInterval(function(){
+    document.querySelectorAll('.js-timer').forEach(function(el){
+      el.textContent=fmt(Number(el.dataset.base));
+      el.dataset.base=String(Number(el.dataset.base)+1);
+    });
+  },1000);
+
+  /* ---------- room system ---------- */
+  var lobby=document.getElementById('lobby');
+  var lobbyToast=document.getElementById('lobbyToast');
+  var roomLabel=document.getElementById('roomLabel');
+  var roomBadgeCode=document.getElementById('roomBadgeCode');
+  var debugRoom=document.getElementById('debugRoom');
+  var debugPass=document.getElementById('debugPass');
+  var debugServer=document.getElementById('debugServer');
+  var debugStream=document.getElementById('debugStream');
+  var currentRoom='';
+  var currentStreamKey='';
+  var toastTimer=null;
+
+  function genRoomCode(){
+    var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var s='';
+    for(var i=0;i<6;i++){s+=chars.charAt(Math.floor(Math.random()*chars.length));}
+    return 'FP-'+s;
+  }
+  function genStreamKey(code){
+    var hex='abcdef0123456789';
+    var tail='';
+    for(var i=0;i<6;i++){tail+=hex.charAt(Math.floor(Math.random()*hex.length));}
+    return 'fp_live_'+code.replace(/[^A-Za-z0-9]/g,'').toLowerCase()+'_'+tail;
+  }
+  function setStage(stage){lobby.setAttribute('data-stage',stage);}
+  function showToast(msg){
+    lobbyToast.textContent=msg;
+    lobbyToast.classList.add('show');
+    window.clearTimeout(toastTimer);
+    toastTimer=window.setTimeout(function(){lobbyToast.classList.remove('show');},1800);
+  }
+  function enterRoom(code){
+    currentRoom=code;
+    roomLabel.textContent=code;
+    roomBadgeCode.textContent=code;
+    debugRoom.textContent=code;
+    debugPass.textContent=code;
+    debugServer.textContent='rtmp://push.fighting-plus.cn/live';
+    debugStream.textContent=currentStreamKey||genStreamKey(code);
+    lobby.hidden=true;
+  }
+  function resetBattleState(){
+    if(!battleView.hidden){exitBattle();}
+    if(app.classList.contains('debug-mode')){debugBtn.click();}
+  }
+
+  document.getElementById('createRoomBtn').addEventListener('click',function(){
+    var code=genRoomCode();
+    currentRoom=code;
+    document.getElementById('roomCode').textContent=code;
+    document.getElementById('serverUrl').textContent='rtmp://push.fighting-plus.cn/live';
+    currentStreamKey=genStreamKey(code);
+    document.getElementById('streamKey').textContent=currentStreamKey;
+    setStage('created');
+  });
+
+  document.getElementById('joinRoomBtn').addEventListener('click',function(){
+    document.getElementById('joinInput').value='';
+    document.getElementById('joinErr').textContent='';
+    setStage('join');
+    window.setTimeout(function(){document.getElementById('joinInput').focus();},80);
+  });
+
+  document.getElementById('createdBackBtn').addEventListener('click',function(){setStage('home');});
+  document.getElementById('joinBackBtn').addEventListener('click',function(){setStage('home');});
+
+  document.getElementById('enterRoomBtn').addEventListener('click',function(){
+    enterRoom(document.getElementById('roomCode').textContent.trim());
+  });
+
+  function submitJoin(){
+    var input=document.getElementById('joinInput');
+    var err=document.getElementById('joinErr');
+    var code=input.value.trim().toUpperCase();
+    if(code.length<4){err.textContent='房间码至少需要 4 位字符';input.focus();return;}
+    err.textContent='';
+    enterRoom(code);
+  }
+  document.getElementById('joinSubmitBtn').addEventListener('click',submitJoin);
+  document.getElementById('joinForm').addEventListener('submit',function(e){e.preventDefault();submitJoin();});
+
+  document.querySelectorAll('[data-copy]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var text=document.getElementById(btn.dataset.copy).textContent;
+      function done(){
+        var span=btn.querySelector('span');
+        var old=span.textContent;
+        btn.classList.add('done');span.textContent='已复制';
+        showToast('已复制到剪贴板');
+        window.setTimeout(function(){btn.classList.remove('done');span.textContent=old;},1600);
+      }
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text,done);});
+      }else{fallbackCopy(text,done);}
+    });
+  });
+  function fallbackCopy(text,cb){
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');cb();}catch(e){showToast('复制失败，请手动选择');}
+    document.body.removeChild(ta);
+  }
+
+  document.getElementById('leaveBtn').addEventListener('click',function(){
+    resetBattleState();
+    currentStreamKey='';
+    setStage('home');
+    lobby.hidden=false;
+  });
+
+})();
+</script>
+</body>
+</html>

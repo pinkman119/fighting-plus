@@ -9,7 +9,7 @@ export class StreamsController {
   /** GET /api/streams — 三路流的在线状态 + 推流/拉流地址 */
   @Get()
   async list(@Req() req: Request) {
-    const host = (req.headers['host'] as string) || 'localhost:3200';
+    const host = (req.headers['host'] as string) || 'localhost:3118';
     const rtmpServer = this.streams.buildRtmpServer(host);
     const list = await this.streams.getStatus(rtmpServer);
     return {

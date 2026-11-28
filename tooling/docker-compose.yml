@@ -1,7 +1,7 @@
 services:
   srs:
     image: ossrs/srs:5
-    container_name: obs-multiview-srs
+    container_name: fighting-plus-srs
     restart: unless-stopped
     ports:
       # RTMP 推流端口（OBS 推流地址 rtmp://<本机IP>:1935/live）
@@ -10,6 +10,9 @@ services:
       - "8080:8080"
       # HTTP API：供 NestJS 查询流状态（仅本机使用，不需要对外）
       - "127.0.0.1:1985:1985"
+    # 让容器内的 SRS 可以通过 host.docker.internal 回调宿主机上的 NestJS
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./srs.conf:/usr/local/srs/conf/srs.conf:ro
     command: ["./objs/srs", "-c", "conf/srs.conf"]

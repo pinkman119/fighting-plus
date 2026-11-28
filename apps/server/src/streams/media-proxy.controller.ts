@@ -1,26 +1,41 @@
-import { All, Controller, Logger, Param, Req, Res } from '@nestjs/common';
+import { All, Controller, Inject, Logger, Param, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Readable } from 'node:stream';
+import { RoomsService } from '../rooms/rooms.service';
+
+/** 允许的文件名：<name>.flv | <name>.m3u8 | <name>-<seq>.ts */
+const FILE_RE = /^([\w.-]+?)(\.flv|\.m3u8|-\d+\.ts)$/;
 
 /**
  * 媒体代理：把 /live/** 透明转发到 SRS 的 HTTP 服务（默认 127.0.0.1:8080）。
- * 好处：合流页面与 SRS 同源，避免浏览器 CORS 限制，且外部只需暴露一个端口。
+ * 好处：页面与 SRS 同源，避免浏览器 CORS 限制，且外部只需暴露一个端口。
+ *
+ * 房间成员使用只读拉流令牌 /live/<playToken>.flv，
+ * 这里把令牌映射回真实流名，串流密钥不会暴露给其他成员。
  */
 @Controller('live')
 export class MediaProxyController {
   private readonly logger = new Logger(MediaProxyController.name);
   private readonly srsHttpUrl = process.env.SRS_HTTP_URL || 'http://127.0.0.1:8080';
 
+  constructor(@Inject(RoomsService) private readonly rooms: RoomsService) {}
+
   @All(':file')
   async proxy(@Param('file') file: string, @Req() req: Request, @Res() res: Response) {
-    const target = `${this.srsHttpUrl}/live/${file}`;
+    const match = FILE_RE.exec(file);
+    if (!match) {
+      res.status(400).end('bad media path');
+      return;
+    }
+    const name = this.rooms.resolveStreamName(match[1]) ?? match[1];
+    const target = `${this.srsHttpUrl}/live/${name}${match[2]}`;
     const abort = new AbortController();
     req.on('close', () => abort.abort());
 
     try {
       const upstream = await fetch(target, {
         method: 'GET',
-        headers: { 'user-agent': 'obs-multiview-proxy' },
+        headers: { 'user-agent': 'fighting-plus-proxy' },
         signal: abort.signal,
         // FLV 是长连接直播流，禁用缓存
         cache: 'no-store',
